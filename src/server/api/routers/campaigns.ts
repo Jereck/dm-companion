@@ -24,8 +24,6 @@ export const campaignsRouter = createTRPCRouter({
       limit: 10
     })).map(filterUserForClient)
 
-    console.log(users);
-
     return campaigns.map(campaign => {
       const author = users.find((user) => user.id === campaign.authorId)
 

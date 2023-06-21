@@ -2,8 +2,9 @@ import { useUser } from "@clerk/nextjs";
 import {type  NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
+import { LoadingPage } from "~/components/loading";
 import Navbar from "~/components/navigation";
-import { api, RouterOutputs } from "~/utils/api";
+import { api, type RouterOutputs } from "~/utils/api";
 
 const CreateCampaignWizard = () => {
   const { user } = useUser();
@@ -49,12 +50,30 @@ const CampaignView = (props: CampaignWithUser) => {
   )
 }
 
-const Home: NextPage = () => {
-  const user = useUser();
-  const { data, isLoading } = api.campaigns.getAll.useQuery()
+const Feed = () => {
+  const { data, isLoading: campaignsLoading } = api.campaigns.getAll.useQuery()
 
-  if (isLoading) return <div>Loading...</div>
+  if (campaignsLoading) return <LoadingPage />
+
   if (!data) return <div>Something went wrong.</div>
+
+  return (
+    <div>
+      { data.map((fullCampaignData) => (
+        <CampaignView {...fullCampaignData} key={fullCampaignData.campaign.id} />
+      ))}
+    </div>
+  )
+}
+
+const Home: NextPage = () => {
+  const { isLoaded: userLoaded, isSignedIn } = useUser();
+
+  // Start fetching asap
+  api.campaigns.getAll.useQuery()
+
+  // Returns an empty dive if BOTH aren't loaded. User tends to load faster from Clerk
+  if (!userLoaded) return <div />
 
   return (
     <>
@@ -65,12 +84,8 @@ const Home: NextPage = () => {
       </Head>
       <Navbar />
       <div className="h-screen">
-        { user.isSignedIn && <CreateCampaignWizard /> }
-        <div>
-          { data.map((fullCampaignData) => (
-            <CampaignView {...fullCampaignData} key={fullCampaignData.campaign.id} />
-          ))}
-        </div>
+        { isSignedIn && <CreateCampaignWizard /> }
+        <Feed />
       </div>
     </>
   );
